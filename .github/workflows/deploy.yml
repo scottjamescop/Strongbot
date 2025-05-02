@@ -1,0 +1,32 @@
+name: Deploy to Vultr
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: SSH Deploy to Vultr
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VULTR_DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 66.135.13.130 >> ~/.ssh/known_hosts
+
+      - name: Deploy via SSH
+        run: |
+          ssh root@66.135.13.130 << 'EOF'
+            cd /root/discord-bot
+            git fetch origin main
+            git reset --hard origin/main
+            systemctl daemon-reload
+            systemctl restart discordbot
+          EOF
