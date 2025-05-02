@@ -71,7 +71,7 @@ async def on_message(message):
 
         if tiktok_match or instagram_match:
                 url = tiktok_match.group(0) if tiktok_match else instagram_match.group(0)
-                await message.channel.send("Downloading the video!...")
+                await message.channel.send("Downloading the video!!...")
 
                 try:
                         await asyncio.sleep(5)
