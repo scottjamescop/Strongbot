@@ -23,13 +23,13 @@ TIKTOK_PATTERN = re.compile(r"https?://(?:\w+\.)?tiktok\.com/.*|https?://(?:\w+\
 INSTAGRAM_PATTERN = re.compile(r"https?://(?:\w+\.)?instagram\.com/.*")
 
 def get_ydl_options():
-        PROXY = random.choice(PROXIES)
+        #PROXY = random.choice(PROXIES)
 
         return  {
                 "format": "best",
                 "outtmpl": "videos/%(id)s.%(ext)s",
                 "quiet": True,
-                "proxy": PROXY,
+                #"proxy": PROXY,
                 "http_headers": {
                         "User-Agent": "Mozilla/5.0  (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko>                        "Accept-Language": "en-US,en;q=0.9"
                 }
