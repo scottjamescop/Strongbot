@@ -1,15 +1,9 @@
 import discord, re, os, asyncio, subprocess, yt_dlp, random, socket
 from discord.ext import commands
+from proxy_manager import get_proxy
 
 MAX_DISCORD_FILESIZE = 8 * 1024 * 1024  # 8 MB
 
-# ─── PUT WORKING PROXIES HERE ───────────────────────────────────────────────────
-PROXIES = [
-    "http://32.223.6.94:80",      # plain HTTP
-    "socks5://67.201.39.14:4145",  # SOCKS5  (note the scheme!)
-    "socks5://98.188.47.150:4145"
-]
-# ────────────────────────────────────────────────────────────────────────────────
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -25,7 +19,7 @@ def ydl_opts(proxy: str | None):
         "outtmpl": "/tmp/%(id)s.%(ext)s",      # download into /tmp so leftover files vanish on reboot
         "quiet": True,
         "proxy": proxy,
-        "socket_timeout": 15,                  # seconds
+        "socket_timeout": 10,                  # seconds
         "retries": 3,                          # a few internal retries before we switch proxy
         "http_headers": {
             "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -44,20 +38,16 @@ async def compress_video(original_path: str) -> str | None:
     except subprocess.CalledProcessError:
         return None
 
-async def download_with_rotation(url: str) -> str | None:
-    """Try each proxy until one succeeds (or all fail).  Returns file path or None."""
-    random.shuffle(PROXIES)
-    proxies_to_try = PROXIES + [None]          # final attempt = no proxy (just in case)
-    last_err = None
-    for p in proxies_to_try:
+async def download_with_rotation(url: str) -> str:
+    for _ in range(10):                       # max 10 attempts
+        proxy = await get_proxy()
         try:
-            with yt_dlp.YoutubeDL(ydl_opts(p)) as ydl:
+            with yt_dlp.YoutubeDL(ydl_opts(proxy)) as ydl:
                 info = ydl.extract_info(url, download=True)
                 return ydl.prepare_filename(info)
-        except Exception as e:
-            last_err = e
+        except Exception:
             continue
-    raise last_err
+    raise RuntimeError("all proxies failed")
 
 @bot.event
 async def on_ready():
