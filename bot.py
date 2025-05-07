@@ -75,7 +75,6 @@ async def on_message(message):
                 await message.channel.send("Downloading the video!!...")
 
                 try:
-                        await asyncio.sleep(5)
                         with yt_dlp.YoutubeDL(get_ydl_options()) as ydl:
                                 info = ydl.extract_info(url, download=True)
                                 video_file = ydl.prepare_filename(info)
