@@ -39,13 +39,16 @@ async def compress_video(original_path: str) -> str | None:
         return None
 
 async def download_with_rotation(url: str) -> str:
-    for _ in range(10):                       # max 10 attempts
+    for _ in range(15):          # try up to 15 working proxies
         proxy = await get_proxy()
+        if proxy is None:
+            raise RuntimeError("proxy pool exhausted – all candidates failed")
         try:
             with yt_dlp.YoutubeDL(ydl_opts(proxy)) as ydl:
                 info = ydl.extract_info(url, download=True)
                 return ydl.prepare_filename(info)
         except Exception:
+            # current proxy failed → discard and loop for next
             continue
     raise RuntimeError("all proxies failed")
 
