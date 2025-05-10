@@ -14,6 +14,7 @@ def build_ydl_opts():
         "format": "mp4",
         "outtmpl": "%(id)s.%(ext)s",
         "socket_timeout": 20,            # <- longer
+        "cookies": "/root/discord-bot/cookies.txt",
         "http_headers": {
             "User-Agent":
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
