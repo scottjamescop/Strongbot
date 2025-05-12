@@ -11,6 +11,8 @@ def build_ydl_opts():
     return {
         "quiet": True,
         "noplaylist": True,
+        "no-check-certificate": True,
+        "compat-option": "no-certifi",
         "format": "mp4",
         "outtmpl": "%(id)s.%(ext)s",
         "socket_timeout": 20,            # <- longer
