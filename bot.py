@@ -9,21 +9,7 @@ URL_RE = re.compile(
 
 def build_ydl_opts():
     return {
-        "quiet": True,
-        "noplaylist": True,
-        "no-check-certificate": True,
-        "compat-option": "no-certifi",
-        "format": "mp4",
-        "outtmpl": "%(id)s.%(ext)s",
-        "socket_timeout": 20,            # <- longer
         "cookies": "/root/discord-bot/www.tiktok.com_cookies.txt",
-        "http_headers": {
-            "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/123.0.0.0 Safari/537.36",
-            "Accept-Language": "en-US,en;q=0.9",
-        },
     }
 
 bot = commands.Bot(command_prefix="!")
