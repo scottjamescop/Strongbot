@@ -10,6 +10,8 @@ URL_RE = re.compile(
 def build_ydl_opts():
     return {
         "cookies": "/root/discord-bot/www.tiktok.com_cookies.txt",
+        "no-check-certificate": True,
+        "compat-option": "no-certifi",
     }
 
 bot = commands.Bot(command_prefix="!")
