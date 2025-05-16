@@ -9,9 +9,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout (runner only, for metadata)
-        uses: actions/checkout@v3
+      # 1 ─ checkout just for metadata (optional)
+      - uses: actions/checkout@v3
 
+      # 2 ─ install key + known_hosts
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -19,22 +20,22 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 66.135.13.130 >> ~/.ssh/known_hosts
 
+      # 3 ─ deploy
       - name: Deploy to VPS
         env:
-          REPO_SSH: git@github.com:scottjamescop/Strongbot.git
+          REPO_SSH: git@github.com:scottjamescop/Strongbot.git   # ← edit
         run: |
-          ssh -i ~/.ssh/id_rsa root@66.135.13.130 << 'EOF'
+          ssh -i ~/.ssh/id_rsa root@66.135.13.130 bash -s <<EOF
             set -e
-
             cd /root/discord-bot
 
             if [ ! -d .git ]; then
-              echo "⚙️  Initialising git repo in existing folder"
+              echo "⚙️  Initialising git repo"
               git init
-              git remote add origin $REPO_SSH
+              git remote add origin "$REPO_SSH"
             fi
 
-            echo "🔄  Fetching latest main"
+            echo "🔄  Updating code"
             git fetch --depth 1 origin main
             git reset --hard FETCH_HEAD
 
