@@ -7,26 +7,35 @@ on:
 
 jobs:
   deploy:
-    name: SSH Deploy to Vultr
     runs-on: ubuntu-latest
 
     steps:
+      # 1 ─ Checkout current commit
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup SSH key
+      # 2 ─ Prepare SSH key & known_hosts
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.VULTR_DEPLOY_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 66.135.13.130 >> ~/.ssh/known_hosts
 
-      - name: Deploy via SSH
+      # 3 ─ Deploy via SSH (clone first time, fetch thereafter)
+      - name: Deploy to VPS
         run: |
-          ssh root@66.135.13.130 << 'EOF'
-            cd /root/discord-bot
-            git fetch origin main
-            git reset --hard origin/main
+          ssh -i ~/.ssh/id_rsa root@66.135.13.130 << 'EOF'
+            set -e
+            if [ ! -d /root/discord-bot/.git ]; then
+              echo "⚙️  First-time clone"
+              git clone --depth 1 git@github.com:scottjamescop/Strongbot.git /root/discord-bot
+            else
+              echo "🔄  Updating existing clone"
+              cd /root/discord-bot
+              git fetch --prune origin
+              git reset --hard origin/main
+            fi
             systemctl daemon-reload
             systemctl restart discordbot
           EOF
