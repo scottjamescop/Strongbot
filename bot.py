@@ -16,18 +16,6 @@ def build_ydl_opts():
 
 bot = commands.Bot(command_prefix="!")
 
-@bot.command(name="strongversion")
-async def version(ctx):
-    import sys, os, yt_dlp, ssl
-    await ctx.reply(
-        f"```python\n"
-        f"Exec : {sys.executable}\n"
-        f"yt-dlp: {yt_dlp.__version__}\n"
-        f"SSL_CERT_FILE:\n  {os.getenv('SSL_CERT_FILE')}\n"
-        f"```",
-        mention_author=False,
-    )
-
 @bot.event
 async def on_message(msg):
     if msg.author.bot:
