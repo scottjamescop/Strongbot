@@ -2,19 +2,16 @@ name: Deploy to Vultr
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1 ─ Checkout current commit
-      - name: Checkout code
+      - name: Checkout (runner only, for metadata)
         uses: actions/checkout@v3
 
-      # 2 ─ Prepare SSH key & known_hosts
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -22,20 +19,25 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 66.135.13.130 >> ~/.ssh/known_hosts
 
-      # 3 ─ Deploy via SSH (clone first time, fetch thereafter)
       - name: Deploy to VPS
+        env:
+          REPO_SSH: git@github.com:scottjamescop/Strongbot.git
         run: |
           ssh -i ~/.ssh/id_rsa root@66.135.13.130 << 'EOF'
             set -e
-            if [ ! -d /root/discord-bot/.git ]; then
-              echo "⚙️  First-time clone"
-              git clone --depth 1 git@github.com:scottjamescop/Strongbot.git /root/discord-bot
-            else
-              echo "🔄  Updating existing clone"
-              cd /root/discord-bot
-              git fetch --prune origin
-              git reset --hard origin/main
+
+            cd /root/discord-bot
+
+            if [ ! -d .git ]; then
+              echo "⚙️  Initialising git repo in existing folder"
+              git init
+              git remote add origin $REPO_SSH
             fi
+
+            echo "🔄  Fetching latest main"
+            git fetch --depth 1 origin main
+            git reset --hard FETCH_HEAD
+
             systemctl daemon-reload
             systemctl restart discordbot
           EOF
