@@ -23,22 +23,31 @@ jobs:
       # 3 ─ deploy
       - name: Deploy to VPS
         env:
-          REPO_SSH: git@github.com:scottjamescop/Strongbot.git   # ← edit
+          REPO_SSH: git@github.com:scottjamescop/Strongbot.git
         run: |
-          ssh -i ~/.ssh/id_rsa root@66.135.13.130 bash -s <<EOF
+          ssh -i ~/.ssh/id_rsa root@66.135.13.130 bash -s -- "$REPO_SSH" <<'EOF'
             set -e
+            REPO_SSH="$1"
+      
             cd /root/discord-bot
-
+      
+            # Initialise if .git missing
             if [ ! -d .git ]; then
               echo "⚙️  Initialising git repo"
               git init
+            fi
+      
+            # Ensure 'origin' remote exists (add or update URL)
+            if git remote | grep -q '^origin$'; then
+              git remote set-url origin "$REPO_SSH"
+            else
               git remote add origin "$REPO_SSH"
             fi
-
+      
             echo "🔄  Updating code"
             git fetch --depth 1 origin main
             git reset --hard FETCH_HEAD
-
+      
             systemctl daemon-reload
             systemctl restart discordbot
           EOF
