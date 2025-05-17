@@ -77,7 +77,7 @@ async def on_message(message):
 
                         os.remove(video_file)
 
-            except Exception as e:
+                except Exception as e:
                         await message.channel.send(f"Failed to download video {str(e)}")
 
         await bot.process_commands(message)
