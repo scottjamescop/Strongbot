@@ -3,11 +3,10 @@ from discord.ext import commands
 
 TOKEN  = os.getenv("DISCORD_BOT_TOKEN")
 
-URL_RE = re.compile(
-    r"https?://(?:www\.)?(?:tiktok\.com|vm\.tiktok\.com|instagram\.com/(?:reel|p))/[^\s]+"
-)
+TIKTOK_PATTERN = re.compile(r"https?://(?:\w+\.)?tiktok\.com/.*|https?://(?:\w+\.)?vt\.tiktok\.com/.*")
+INSTAGRAM_PATTERN = re.compile(r"https?://(?:\w+\.)?instagram\.com/.*")
 
-def build_ydl_opts():
+def get_ydl_options():
     return {
         "cookies": "/root/discord-bot/www.tiktok.com_cookies.txt",
         "no-check-certificate": True,
@@ -19,37 +18,68 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+async def compress_video(original_path):
+        compressed_path = original_path.replace(".", "_compressed.")
+
+        command = [
+                "ffmpeg",
+                "-i", original_path,
+                "-vcodec", "libx264",
+                "-crf", "32",
+                compressed_path
+        ]
+        try:
+                subprocess.run(command, check=True)
+
+                if os.path.getsize(compressed_path) <= MAX_DISCORD_FILESIZE:
+                        return compressed_path
+                else:
+                        os.remove(compressed_path)
+                        return None
+        except subprocess.CalledProcessError:
+                return None
+
 @bot.event
-async def on_message(msg):
-    if msg.author.bot:
-        return
-    m = URL_RE.search(msg.content)
-    if not m:
-        return
+async def on_message(message):
+        if message.author == bot.user:
+                return
 
-    url = m.group(0)
-    await msg.channel.typing()
+        tiktok_match = TIKTOK_PATTERN.search(message.content)
+        instagram_match = INSTAGRAM_PATTERN.search(message.content)
 
-    opts  = build_ydl_opts()
+        if tiktok_match or instagram_match:
+                url = tiktok_match.group(0) if tiktok_match else instagram_match.group(0)
+                await message.channel.send("Downloading the video!!...")
 
-    try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            info  = ydl.extract_info(url, download=False)
-            size  = info.get("filesize") or info.get("filesize_approx") or 0
+                try:
+                        with yt_dlp.YoutubeDL(get_ydl_options()) as ydl:
+                                info = ydl.extract_info(url, download=True)
+                                video_file = ydl.prepare_filename(info)
 
-            if size and size < 8 * 1024 * 1024:
-                filename = ydl.prepare_filename(info)
-                ydl.download([url])
-                await msg.reply(file=discord.File(filename), mention_author=False)
-                os.remove(filename)
-            else:
-                embed = discord.Embed(title=info.get("title", "Video"), url=url)
-                embed.set_image(url=info.get("thumbnail"))
-                # note: Discord will not play arbitrary MP4 links in an embed,
-                # but users can click through.
-                await msg.reply(embed=embed, mention_author=False)
+                        if os.path.getsize(video_file) <= MAX_DISCORD_FILESIZE:
+                                await message.channel.send(f"Video from {message.author}")
+                                await message.channel.send(file=discord.File(video_file))
+                                await message.delete()
 
-    except Exception as e:
-        await msg.reply(f"**Download failed** ({e})", mention_author=False)
+                                os.remove(video_file)
+
+                        else:
+                                await message.channel.send("compressing video...")
+
+                                compressed_file = await compress_video(video_file)
+
+                                if compressed_file:
+                                        await message.channel.send(file=discord.File(compressed_file))
+                                        await message.delete()
+                                        os.remove(compressed_file)
+                                else:
+                                        await message.channel.send("Video too big. Tell Scott to pay for Nitro")
+
+                        os.remove(video_file)
+
+            except Exception as e:
+                        await message.channel.send(f"Failed to download video {str(e)}")
+
+        await bot.process_commands(message)
 
 bot.run(TOKEN)
