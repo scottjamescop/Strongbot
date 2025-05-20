@@ -31,7 +31,7 @@ async def compress_video(original_path):
         try:
                 subprocess.run(command, check=True)
 
-                if os.path.getsize(compressed_path) <= MAX_DISCORD_FILESIZE:
+                if os.path.getsize(compressed_path) <= 8 * 1024 * 1024:
                         return compressed_path
                 else:
                         os.remove(compressed_path)
