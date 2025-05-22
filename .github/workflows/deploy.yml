@@ -1,5 +1,8 @@
 name: Deploy to Vultr
 
+permissions:
+  contents: write     # ← allows git push
+
 on:
   push:
     branches: [ main ]
