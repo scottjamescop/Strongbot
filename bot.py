@@ -1,4 +1,4 @@
-import re, os, asyncio, tempfile, yt_dlp, discord, random, aiohttp, subprocess, datetime
+import re, os, asyncio, tempfile, yt_dlp, discord, random, aiohttp, subprocess, datetime, pathlib
 from discord.ext import commands
 
 TOKEN  = os.getenv("DISCORD_BOT_TOKEN")
