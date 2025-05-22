@@ -11,7 +11,19 @@ jobs:
     steps:
       # 1 ─ checkout just for metadata (optional)
       - uses: actions/checkout@v3
-
+      - name: Bump version
+        run: |
+          ver=$(cat version.txt)
+          major=${ver%%.*}
+          rest=${ver#*.}
+          minor=${rest%%.*}
+          patch=${rest##*.}
+          new_patch=$((patch + 1))
+          echo "$major.$minor.$new_patch" > version.txt
+          git config user.name  "GitHub Actions"
+          git config user.email "actions@github.com"
+          git commit -am "chore: bump version to $major.$minor.$new_patch"
+          git push
       # 2 ─ install key + known_hosts
       - name: Setup SSH
         run: |

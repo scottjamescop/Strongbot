@@ -9,17 +9,10 @@ INSTAGRAM_PATTERN = re.compile(r"https?://(?:\w+\.)?instagram\.com/.*")
 
 def get_version() -> str:
     try:
-        sha = subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=os.path.dirname(__file__),
-            text=True
-        ).strip()
-    except Exception:
-        sha = "unknown"
-    mtime = datetime.datetime.utcfromtimestamp(
-        os.path.getmtime(__file__)
-    ).strftime("%Y-%m-%d %H:%M UTC")
-    return f"{sha} · {mtime}"
+        with open(pathlib.Path(__file__).parent / "version.txt") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return "dev"
 
 VERSION = get_version()
 
@@ -59,13 +52,10 @@ async def compress_video(original_path):
 @bot.event
 async def on_ready():
     if ANNOUNCE_CH:
-        try:
-            chan = bot.get_channel(ANNOUNCE_CH)
-            if chan:
-                await chan.send(f"🟢 **Bot online!**  `{VERSION}`")
-        except Exception as e:
-            print("Announce failed:", e)
-    print(f"[BOOT] logged in as {bot.user} – {VERSION}")
+        ch = bot.get_channel(ANNOUNCE_CH)
+        if ch:
+            await ch.send(f"🟢 StrongBot online!  `{VERSION}`")
+    print(f"[BOOT] {bot.user} {VERSION}")
 
 @bot.event
 async def on_message(message):
