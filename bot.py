@@ -56,7 +56,7 @@ async def on_message(message):
                                 info = ydl.extract_info(url, download=True)
                                 video_file = ydl.prepare_filename(info)
 
-                        if os.path.getsize(video_file) <= MAX_DISCORD_FILESIZE:
+                        if os.path.getsize(video_file) <= 8 * 1024 * 1024:
                                 await message.channel.send(f"Video from {message.author}")
                                 await message.channel.send(file=discord.File(video_file))
                                 await message.delete()
