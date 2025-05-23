@@ -16,12 +16,11 @@ def get_version() -> str:
 
 VERSION = get_version()
 
-def get_ydl_options():
-    return {
-        "cookies": "/root/discord-bot/www.tiktok.com_cookies.txt",
-        "no-check-certificate": True,
-        "compat-option": "no-certifi",
-    }
+ydl_options = {
+    "cookies": "/root/discord-bot/www.tiktok.com_cookies.txt",
+    "no-check-certificate": True,
+    "compat-option": "no-certifi",
+}
 
 intents = discord.Intents.default()
 intents.message_content = True  
@@ -70,7 +69,7 @@ async def on_message(message):
                 await message.channel.send("Downloading the video!!...")
 
                 try:
-                        with yt_dlp.YoutubeDL(get_ydl_options()) as ydl:
+                        with yt_dlp.YoutubeDL(ydl_options) as ydl:
                                 info = ydl.extract_info(url, download=True)
                                 video_file = ydl.prepare_filename(info)
 
