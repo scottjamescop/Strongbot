@@ -78,8 +78,6 @@ async def on_message(message):
                                 await message.channel.send(file=discord.File(video_file))
                                 await message.delete()
 
-                                os.remove(video_file)
-
                         else:
                                 await message.channel.send("compressing video...")
 
