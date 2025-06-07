@@ -27,7 +27,7 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-async def def compress_video(video_full_path, size_upper_bound, two_pass=True, filename_suffix='cps_'):
+async def compress_video(video_full_path, size_upper_bound, two_pass=True, filename_suffix='cps_'):
 
     filename, extension = os.path.splitext(video_full_path)
     extension = '.mp4'
