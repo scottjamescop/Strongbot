@@ -5,7 +5,7 @@ TOKEN  = os.getenv("DISCORD_BOT_TOKEN")
 ANNOUNCE_CH = int(os.getenv("BOT_ANNOUNCE_CHANNEL", "0"))
 
 TIKTOK_PATTERN = re.compile(r"https?://(?:\w+\.)?tiktok\.com/.*|https?://(?:\w+\.)?vt\.tiktok\.com/.*")
-INSTAGRAM_PATTERN = re.compile(r"https?://(?:\w+\.)?instagram\.com/.*")
+#INSTAGRAM_PATTERN = re.compile(r"https?://(?:\w+\.)?instagram\.com/.*")
 
 def get_version() -> str:
     try:
