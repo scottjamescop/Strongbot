@@ -164,7 +164,7 @@ def handle_webhook():
 
     # Update refresh token for next run
     new_refresh = tokens["refresh_token"]
-    env_path = Path("/opt/fitbitbot/.env")
+    env_path = Path("/root/calorie-bot/.env")
     text = env_path.read_text().splitlines()
     text = [line for line in text if not line.startswith("FITBIT_REFRESH_TOKEN=")]
     text.append(f"FITBIT_REFRESH_TOKEN={new_refresh}")
@@ -206,7 +206,7 @@ def handle_url_webhook():
     # Refresh Fitbit tokens
     tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
     new_refresh = tokens["refresh_token"]
-    env_path = Path("/opt/fitbitbot/.env")
+    env_path = Path("/root/calorie-bot/.env")
     text = env_path.read_text().splitlines()
     text = [line for line in text if not line.startswith("FITBIT_REFRESH_TOKEN=")]
     text.append(f"FITBIT_REFRESH_TOKEN={new_refresh}")
@@ -233,7 +233,7 @@ def handle_specific_food_webhook():
     # Refresh Fitbit tokens
     tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
     new_refresh = tokens["refresh_token"]
-    env_path = Path("/opt/fitbitbot/.env")
+    env_path = Path("/root/calorie-bot/.env")
     text = env_path.read_text().splitlines()
     text = [line for line in text if not line.startswith("FITBIT_REFRESH_TOKEN=")]
     text.append(f"FITBIT_REFRESH_TOKEN={new_refresh}")
@@ -260,7 +260,7 @@ def handle_search_food_webhook():
     # Refresh Fitbit tokens
     tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
     new_refresh = tokens["refresh_token"]
-    env_path = Path("/opt/fitbitbot/.env")
+    env_path = Path("/root/calorie-bot/.env")
     text = env_path.read_text().splitlines()
     text = [line for line in text if not line.startswith("FITBIT_REFRESH_TOKEN=")]
     text.append(f"FITBIT_REFRESH_TOKEN={new_refresh}")
