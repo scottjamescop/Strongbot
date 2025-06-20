@@ -113,10 +113,10 @@ async def on_message(message):
                 return
 
         tiktok_match = TIKTOK_PATTERN.search(message.content)
-        instagram_match = INSTAGRAM_PATTERN.search(message.content)
+        #instagram_match = INSTAGRAM_PATTERN.search(message.content)
 
-        if tiktok_match or instagram_match:
-                url = tiktok_match.group(0) if tiktok_match else instagram_match.group(0)
+        if tiktok_match# or instagram_match:
+                url = tiktok_match.group(0) if tiktok_match# else instagram_match.group(0)
                 await message.channel.send("Downloading the video!!...")
 
                 try:
