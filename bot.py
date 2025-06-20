@@ -104,7 +104,7 @@ async def on_ready():
     if ANNOUNCE_CH:
         ch = bot.get_channel(ANNOUNCE_CH)
         if ch:
-            await ch.send(f"🟢 StrongBot online!  `{VERSION}`")
+            #await ch.send(f"🟢 StrongBot online!  `{VERSION}`")
     print(f"[BOOT] {bot.user} {VERSION}")
 
 @bot.event
