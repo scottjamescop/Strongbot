@@ -66,13 +66,13 @@ def log_food_to_fitbit(access_token: str, food: str, cal: int, protein: int = No
     r.raise_for_status()
     return r.json()
 
-def log_specific_food_to_fitbit(access_token: str, food_id: str):
+def log_specific_food_to_fitbit(access_token: str, food_id: str, unit_id: int):
     today = datetime.date.today().strftime("%Y-%m-%d")
     now   = datetime.datetime.now().strftime("%H:%M:%S")
     body = {
         "foodId": food_id,
         "mealTypeId": 6,          # 6 = Anytime
-        "unitId": 147,            # Serving
+        "unitId": unit_id,            # Serving
         "amount": 1,
         "date": today,
         "time": now,
@@ -226,6 +226,7 @@ def handle_specific_food_webhook():
         return jsonify({"error": "unauthorized"}), 401
 
     food_id = request.json.get("food_id")
+    unit_id = request.json.get("unit_id")
 
     if not food_id:
         return jsonify({"error": "no food_id"}), 400
@@ -242,7 +243,7 @@ def handle_specific_food_webhook():
 
     # Log food
     log_resp = log_specific_food_to_fitbit(
-        access_token, food_id
+        access_token, food_id, unit_id
     )
     return jsonify({"status": "ok", "fitbit": log_resp})
 
