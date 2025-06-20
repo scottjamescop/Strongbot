@@ -7,6 +7,8 @@ image_food_logger.py – Flask webhook that:
 """
 
 import os, json, base64, datetime, requests
+import tempfile, urllib.request
+from urllib.parse import urlparse
 from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
@@ -44,7 +46,6 @@ def refresh_fitbit_tokens(refresh_token: str) -> dict:
     r.raise_for_status()
     return r.json()
 
-
 def log_food_to_fitbit(access_token: str, food: str, cal: int, protein: int = None):
     """Create a custom food entry (manual log) – simplest method."""
     # Simplest: log a manual entry with foodName + cal. Fitbit needs at least
@@ -65,6 +66,21 @@ def log_food_to_fitbit(access_token: str, food: str, cal: int, protein: int = No
     r.raise_for_status()
     return r.json()
 
+def log_specific_food_to_fitbit(access_token: str, food_id: str):
+    today = datetime.date.today().strftime("%Y-%m-%d")
+    now   = datetime.datetime.now().strftime("%H:%M:%S")
+    body = {
+        "foodId": food_id,
+        "mealTypeId": 6,          # 6 = Anytime
+        "unitId": 304,            # Serving
+        "amount": 1,
+        "date": today,
+        "time": now,
+    }
+    headers = {"Authorization": f"Bearer {access_token}"}
+    r = requests.post("https://api.fitbit.com/1/user/-/foods/log.json", headers=headers, data=body)
+    r.raise_for_status()
+    return r.json()
 
 def analyze_image(img_url: str) -> dict:
     """
@@ -161,8 +177,6 @@ def handle_webhook():
 
     return jsonify({"status": "ok", "vision": nutrition, "fitbit": log_resp})
 
-import tempfile, urllib.request
-from urllib.parse import urlparse
 
 @app.route("/url_webhook", methods=["POST"])
 def handle_url_webhook():
@@ -195,6 +209,33 @@ def handle_url_webhook():
         access_token, nutrition["food"], nutrition["calories"], nutrition.get("protein")
     )
     return jsonify({"status": "ok", "vision": nutrition, "fitbit": log_resp})
+
+@app.route("/specific_food", methods=["POST"])
+def handle_url_webhook():
+    # Basic header auth
+    if WEBHOOK_KEY and request.json.get("secret") != WEBHOOK_KEY:
+        return jsonify({"error": "unauthorized"}), 401
+
+    food_id = request.json.get("food_id")
+
+    if not food_id:
+        return jsonify({"error": "no food_id"}), 400
+
+    # Log food
+    log_resp = log_specific_food_to_fitbit(
+        access_token, food_id
+    )
+    return jsonify({"status": "ok", "vision": nutrition, "fitbit": log_resp})
+
+
+    # Refresh Fitbit tokens
+    tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
+    new_refresh = tokens["refresh_token"]
+    (Path("/root/calorie-bot/.env")
+        .write_text(Path("/root/calorie-bot/.env").read_text()
+        .replace(f"FITBIT_REFRESH_TOKEN={FITBIT_REFRESH}",
+                 f"FITBIT_REFRESH_TOKEN={new_refresh}")))
+    access_token = tokens["access_token"]
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
