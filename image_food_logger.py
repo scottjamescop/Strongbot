@@ -229,13 +229,6 @@ def handle_specific_food_webhook():
     if not food_id:
         return jsonify({"error": "no food_id"}), 400
 
-    # Log food
-    log_resp = log_specific_food_to_fitbit(
-        access_token, food_id
-    )
-    return jsonify({"status": "ok", "fitbit": log_resp})
-
-
     # Refresh Fitbit tokens
     tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
     new_refresh = tokens["refresh_token"]
@@ -244,6 +237,12 @@ def handle_specific_food_webhook():
         .replace(f"FITBIT_REFRESH_TOKEN={FITBIT_REFRESH}",
                  f"FITBIT_REFRESH_TOKEN={new_refresh}")))
     access_token = tokens["access_token"]
+
+    # Log food
+    log_resp = log_specific_food_to_fitbit(
+        access_token, food_id
+    )
+    return jsonify({"status": "ok", "fitbit": log_resp})
 
 @app.route("/search_food", methods=["GET"])
 def handle_search_food_webhook():
@@ -256,13 +255,6 @@ def handle_search_food_webhook():
     if not food_to_search:
         return jsonify({"error": "no search team"}), 400
 
-    # Log food
-    log_resp = search_food(
-        access_token, food_to_search
-    )
-    return jsonify({"status": "ok", "fitbit": log_resp})
-
-
     # Refresh Fitbit tokens
     tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
     new_refresh = tokens["refresh_token"]
@@ -272,6 +264,11 @@ def handle_search_food_webhook():
                  f"FITBIT_REFRESH_TOKEN={new_refresh}")))
     access_token = tokens["access_token"]
 
+    # search food
+    log_resp = search_food(
+        access_token, food_to_search
+    )
+    return jsonify({"status": "ok", "fitbit": log_resp})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
