@@ -103,7 +103,7 @@ async def compress_video(video_full_path, size_upper_bound, two_pass=True, filen
 async def on_ready():
     if ANNOUNCE_CH:
         ch = bot.get_channel(ANNOUNCE_CH)
-        if ch:
+        #if ch:
             #await ch.send(f"🟢 StrongBot online!  `{VERSION}`")
     print(f"[BOOT] {bot.user} {VERSION}")
 
