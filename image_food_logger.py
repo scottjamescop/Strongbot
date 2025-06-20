@@ -82,6 +82,14 @@ def log_specific_food_to_fitbit(access_token: str, food_id: str):
     r.raise_for_status()
     return r.json()
 
+def search_food(access_token: str, food_search: str):
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {"query": food_search}
+
+    r = requests.get('https://api.fitbit.com/1/foods/search.json', params=params, headers=headers)
+    r.raise_for_status()
+    return r.json()
+
 def analyze_image(img_url: str) -> dict:
     """
     Call OpenAI Vision with a public image URL and get nutrition JSON back.
@@ -211,7 +219,7 @@ def handle_url_webhook():
     return jsonify({"status": "ok", "vision": nutrition, "fitbit": log_resp})
 
 @app.route("/specific_food", methods=["POST"])
-def handle_url_webhook():
+def handle_specific_food_webhook():
     # Basic header auth
     if WEBHOOK_KEY and request.json.get("secret") != WEBHOOK_KEY:
         return jsonify({"error": "unauthorized"}), 401
@@ -225,7 +233,7 @@ def handle_url_webhook():
     log_resp = log_specific_food_to_fitbit(
         access_token, food_id
     )
-    return jsonify({"status": "ok", "vision": nutrition, "fitbit": log_resp})
+    return jsonify({"status": "ok", "fitbit": log_resp})
 
 
     # Refresh Fitbit tokens
@@ -236,6 +244,34 @@ def handle_url_webhook():
         .replace(f"FITBIT_REFRESH_TOKEN={FITBIT_REFRESH}",
                  f"FITBIT_REFRESH_TOKEN={new_refresh}")))
     access_token = tokens["access_token"]
+
+@app.route("/search_food", methods=["GET"])
+def handle_search_food_webhook():
+    # Basic header auth
+    if WEBHOOK_KEY and request.json.get("secret") != WEBHOOK_KEY:
+        return jsonify({"error": "unauthorized"}), 401
+
+    food_to_search = request.json.get("search_term")
+
+    if not food_to_search:
+        return jsonify({"error": "no search team"}), 400
+
+    # Log food
+    log_resp = search_food(
+        access_token, food_to_search
+    )
+    return jsonify({"status": "ok", "fitbit": log_resp})
+
+
+    # Refresh Fitbit tokens
+    tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
+    new_refresh = tokens["refresh_token"]
+    (Path("/root/calorie-bot/.env")
+        .write_text(Path("/root/calorie-bot/.env").read_text()
+        .replace(f"FITBIT_REFRESH_TOKEN={FITBIT_REFRESH}",
+                 f"FITBIT_REFRESH_TOKEN={new_refresh}")))
+    access_token = tokens["access_token"]
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
