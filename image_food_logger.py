@@ -206,10 +206,11 @@ def handle_url_webhook():
     # Refresh Fitbit tokens
     tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
     new_refresh = tokens["refresh_token"]
-    (Path("/root/calorie-bot/.env")
-        .write_text(Path("/root/calorie-bot/.env").read_text()
-        .replace(f"FITBIT_REFRESH_TOKEN={FITBIT_REFRESH}",
-                 f"FITBIT_REFRESH_TOKEN={new_refresh}")))
+    env_path = Path("/opt/fitbitbot/.env")
+    text = env_path.read_text().splitlines()
+    text = [line for line in text if not line.startswith("FITBIT_REFRESH_TOKEN=")]
+    text.append(f"FITBIT_REFRESH_TOKEN={new_refresh}")
+    env_path.write_text("\n".join(text) + "\n")
     access_token = tokens["access_token"]
 
     # Log food
@@ -232,10 +233,11 @@ def handle_specific_food_webhook():
     # Refresh Fitbit tokens
     tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
     new_refresh = tokens["refresh_token"]
-    (Path("/root/calorie-bot/.env")
-        .write_text(Path("/root/calorie-bot/.env").read_text()
-        .replace(f"FITBIT_REFRESH_TOKEN={FITBIT_REFRESH}",
-                 f"FITBIT_REFRESH_TOKEN={new_refresh}")))
+    env_path = Path("/opt/fitbitbot/.env")
+    text = env_path.read_text().splitlines()
+    text = [line for line in text if not line.startswith("FITBIT_REFRESH_TOKEN=")]
+    text.append(f"FITBIT_REFRESH_TOKEN={new_refresh}")
+    env_path.write_text("\n".join(text) + "\n")
     access_token = tokens["access_token"]
 
     # Log food
@@ -258,10 +260,11 @@ def handle_search_food_webhook():
     # Refresh Fitbit tokens
     tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
     new_refresh = tokens["refresh_token"]
-    (Path("/root/calorie-bot/.env")
-        .write_text(Path("/root/calorie-bot/.env").read_text()
-        .replace(f"FITBIT_REFRESH_TOKEN={FITBIT_REFRESH}",
-                 f"FITBIT_REFRESH_TOKEN={new_refresh}")))
+    env_path = Path("/opt/fitbitbot/.env")
+    text = env_path.read_text().splitlines()
+    text = [line for line in text if not line.startswith("FITBIT_REFRESH_TOKEN=")]
+    text.append(f"FITBIT_REFRESH_TOKEN={new_refresh}")
+    env_path.write_text("\n".join(text) + "\n")
     access_token = tokens["access_token"]
 
     # search food
