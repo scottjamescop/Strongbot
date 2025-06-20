@@ -119,7 +119,7 @@ def analyze_image(img_url: str) -> dict:
     payload = {
         "model": "o3",          # model with vision support
         "messages": [system_msg, user_msg],
-        "max_tokens": 500,
+        "max_completion_tokens": 500,
     }
     r = requests.post(
         "https://api.openai.com/v1/chat/completions",
