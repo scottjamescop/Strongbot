@@ -65,4 +65,21 @@ jobs:
       
             systemctl daemon-reload
             systemctl restart discordbot
+
+            # calorie bot
+            cd /root/calorie-bot
+            if [ ! -d .git ]; then git init; fi
+            if git remote | grep -q '^origin$'; then
+              git remote set-url origin "$REPO_SSH"
+            else
+              git remote add origin "$REPO_SSH"
+            fi
+            git fetch --depth 1 origin main
+            git reset --hard FETCH_HEAD
+
+            # optional: upgrade deps if requirements.txt exists
+            /root/calorie-bot/venv/bin/pip install -r requirements.txt --upgrade --quiet || true
+
+            systemctl daemon-reload
+            systemctl restart calorie-bot
           EOF
