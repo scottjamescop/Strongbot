@@ -55,7 +55,7 @@ def log_food_to_fitbit(access_token: str, food: str, cal: int, protein: int = No
     body = {
         "foodName": food,
         "mealTypeId": 6,          # 6 = Anytime
-        "unitId": 304,            # Serving
+        "unitId": 147,            # Serving
         "amount": 1,
         "calories": cal,
         "date": today,
@@ -72,7 +72,7 @@ def log_specific_food_to_fitbit(access_token: str, food_id: str):
     body = {
         "foodId": food_id,
         "mealTypeId": 6,          # 6 = Anytime
-        "unitId": 304,            # Serving
+        "unitId": 147,            # Serving
         "amount": 1,
         "date": today,
         "time": now,
