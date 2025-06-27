@@ -17,7 +17,6 @@ load_dotenv("/root/calorie-bot/.env")
 
 # --- Config -----------------------------------------------------------------
 OPENAI_API_KEY     = os.environ["OPENAI_API_KEY"]
-FITBIT_ACCESS_TOKEN = os.environ["FITBIT_ACCESS_TOKEN"]
 FITBIT_CLIENT_ID   = os.environ["FITBIT_CLIENT_ID"]
 FITBIT_SECRET      = os.environ["FITBIT_SECRET"]
 FITBIT_REFRESH     = os.environ["REFRESH_TOKEN"]
