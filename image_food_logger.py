@@ -243,7 +243,7 @@ def handle_food_webhook():
             tokens["access_token"],
             nutrition["food"],
             nutrition["calories"],
-            nutrition.get("protein"),
+            nutrition["protein"],
         )
     except Exception as e:
         return jsonify({"error": "fitbit_log_failed", "detail": str(e)}), 500
@@ -278,7 +278,7 @@ def handle_url_webhook():
             tokens["access_token"],
             nutrition["food"],
             nutrition["calories"],
-            nutrition.get("protein"),
+            nutrition["protein"],
         )
     except Exception as e:
         return jsonify({"error": "fitbit_log_failed", "detail": str(e)}), 500
