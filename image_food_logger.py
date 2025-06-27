@@ -17,6 +17,7 @@ load_dotenv("/root/calorie-bot/.env")
 
 # --- Config -----------------------------------------------------------------
 OPENAI_API_KEY     = os.environ["OPENAI_API_KEY"]
+FITBIT_ACCESS_TOKEN = os.environ["FITBIT_ACCESS_TOKEN"]
 FITBIT_CLIENT_ID   = os.environ["FITBIT_CLIENT_ID"]
 FITBIT_SECRET      = os.environ["FITBIT_SECRET"]
 FITBIT_REFRESH     = os.environ["REFRESH_TOKEN"]
@@ -44,7 +45,16 @@ def refresh_fitbit_tokens(refresh_token: str) -> dict:
     }
     r = requests.post("https://api.fitbit.com/oauth2/token", headers=HEADERS_FITBIT, data=data)
     r.raise_for_status()
+    update_tokens_in_env(r.json())
     return r.json()
+
+def update_tokens_in_env(tokens: str) -> dict:
+    new_refresh = tokens["refresh_token"]
+    env_path = Path("/root/calorie-bot/.env")
+    text = env_path.read_text().splitlines()
+    text = [line for line in text if not line.startswith("REFRESH_TOKEN=")]
+    text.append(f"REFRESH_TOKEN={new_refresh}")
+    env_path.write_text("\n".join(text) + "\n")
 
 def log_food_to_fitbit(access_token: str, food: str, cal: int, protein: int = None):
     """Create a custom food entry (manual log) – simplest method."""
@@ -156,33 +166,21 @@ def handle_webhook():
     except Exception as e:
         return jsonify({"error": "vision_failed", "detail": str(e)}), 500
 
-    # 2. Refresh Fitbit tokens
     try:
         tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
     except Exception as e:
         return jsonify({"error": "fitbit_refresh_failed", "detail": str(e)}), 500
-
-    # Update refresh token for next run
-    new_refresh = tokens["refresh_token"]
-    env_path = Path("/root/calorie-bot/.env")
-    text = env_path.read_text().splitlines()
-    text = [line for line in text if not line.startswith("FITBIT_REFRESH_TOKEN=")]
-    text.append(f"FITBIT_REFRESH_TOKEN={new_refresh}")
-    env_path.write_text("\n".join(text) + "\n")
-
-    access_token = tokens["access_token"]
-
-    # 3. Log food
+    
     try:
         log_resp = log_food_to_fitbit(
-            access_token,
+            tokens["access_token"],
             nutrition["food"],
             nutrition["calories"],
             nutrition.get("protein"),
         )
     except Exception as e:
         return jsonify({"error": "fitbit_log_failed", "detail": str(e)}), 500
-
+    
     return jsonify({"status": "ok", "vision": nutrition, "fitbit": log_resp})
 
 
@@ -202,21 +200,23 @@ def handle_url_webhook():
     except Exception as e:
         return jsonify({"error": "vision_failed", "detail": str(e)}), 500
 
-
-    # Refresh Fitbit tokens
-    tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
-    new_refresh = tokens["refresh_token"]
-    env_path = Path("/root/calorie-bot/.env")
-    text = env_path.read_text().splitlines()
-    text = [line for line in text if not line.startswith("FITBIT_REFRESH_TOKEN=")]
-    text.append(f"FITBIT_REFRESH_TOKEN={new_refresh}")
-    env_path.write_text("\n".join(text) + "\n")
-    access_token = tokens["access_token"]
+    try:
+        tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
+    except Exception as e:
+        return jsonify({"error": "fitbit_refresh_failed", "detail": str(e)}), 500
+    
 
     # Log food
-    log_resp = log_food_to_fitbit(
-        access_token, nutrition["food"], nutrition["calories"], nutrition.get("protein")
-    )
+    try:
+        log_resp = log_food_to_fitbit(
+            tokens["access_token"],
+            nutrition["food"],
+            nutrition["calories"],
+            nutrition.get("protein"),
+        )
+    except Exception as e:
+        return jsonify({"error": "fitbit_log_failed", "detail": str(e)}), 500
+
     return jsonify({"status": "ok", "vision": nutrition, "fitbit": log_resp})
 
 @app.route("/specific_food", methods=["POST"])
@@ -232,19 +232,15 @@ def handle_specific_food_webhook():
     if not food_id:
         return jsonify({"error": "no food_id"}), 400
 
-    # Refresh Fitbit tokens
-    tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
-    new_refresh = tokens["refresh_token"]
-    env_path = Path("/root/calorie-bot/.env")
-    text = env_path.read_text().splitlines()
-    text = [line for line in text if not line.startswith("FITBIT_REFRESH_TOKEN=")]
-    text.append(f"FITBIT_REFRESH_TOKEN={new_refresh}")
-    env_path.write_text("\n".join(text) + "\n")
-    access_token = tokens["access_token"]
+    try:
+        tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
+    except Exception as e:
+        return jsonify({"error": "fitbit_refresh_failed", "detail": str(e)}), 500
+    
 
     # Log food
     log_resp = log_specific_food_to_fitbit(
-        access_token, food_id, unit_id, serving_amount
+        tokens["access_token"], food_id, unit_id, serving_amount
     )
     return jsonify({"status": "ok", "fitbit": log_resp})
 
@@ -260,18 +256,15 @@ def handle_search_food_webhook():
         return jsonify({"error": "no search team"}), 400
 
     # Refresh Fitbit tokens
-    tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
-    new_refresh = tokens["refresh_token"]
-    env_path = Path("/root/calorie-bot/.env")
-    text = env_path.read_text().splitlines()
-    text = [line for line in text if not line.startswith("FITBIT_REFRESH_TOKEN=")]
-    text.append(f"FITBIT_REFRESH_TOKEN={new_refresh}")
-    env_path.write_text("\n".join(text) + "\n")
-    access_token = tokens["access_token"]
+    try:
+        tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
+    except Exception as e:
+        return jsonify({"error": "fitbit_refresh_failed", "detail": str(e)}), 500
+    
 
     # search food
     log_resp = search_food(
-        access_token, food_to_search
+        tokens["access_token"], food_to_search
     )
     return jsonify({"status": "ok", "fitbit": log_resp})
 
