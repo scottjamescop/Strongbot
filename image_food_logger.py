@@ -220,7 +220,7 @@ def handle_webhook():
     return jsonify({"status": "ok", "vision": nutrition, "fitbit": log_resp})
 
 @app.route("/food_webook", methods=["POST"])
-def handle_webhook():
+def handle_food_webhook():
     if WEBHOOK_KEY:
         key = request.headers.get("X-Webhook-Key")
         if key != WEBHOOK_KEY:
