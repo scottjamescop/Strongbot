@@ -219,12 +219,10 @@ def handle_webhook():
     
     return jsonify({"status": "ok", "vision": nutrition, "fitbit": log_resp})
 
-@app.route("/food_webook", methods=["POST"])
+@app.route("/food_webhook", methods=["POST"])
 def handle_food_webhook():
-    if WEBHOOK_KEY:
-        key = request.headers.get("X-Webhook-Key")
-        if key != WEBHOOK_KEY:
-            return jsonify({"error": "unauthorized"}), 401
+    if WEBHOOK_KEY and request.json.get("secret") != WEBHOOK_KEY:
+        return jsonify({"error": "unauthorized"}), 401
 
     food = request.json.get("food")
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
