@@ -140,6 +140,43 @@ def analyze_image(img_url: str) -> dict:
         raise RuntimeError(f"OpenAI vision error {r.status_code}: {r.text}")
     return json.loads(r.json()["choices"][0]["message"]["content"].strip())
 
+def analyze_food(food: str) -> dict:
+    """
+    Call OpenAI Vision with a public image URL and get nutrition JSON back.
+    """
+    system_msg = {
+        "role": "system",
+        "content": (
+            "You are a nutrition assistant. Reply with **ONLY** valid JSON: "
+            '{"food":"<name>","calories":123,"protein":10}. '
+            "If unsure, guess."
+        ),
+    }
+    user_msg = {
+        "role": "user",
+        "content": [
+            {  # text part (required)
+                "type": "text",
+                "text": f"Estimate calories and protein for '{food}'. Respond only in JSON."
+            }
+        ],
+    }
+
+    payload = {
+        "model": "o3",          # model with vision support
+        "messages": [system_msg, user_msg],
+        "max_completion_tokens": 500,
+    }
+    r = requests.post(
+        "https://api.openai.com/v1/chat/completions",
+        headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+        json=payload,
+        timeout=60,
+    )
+    if r.status_code != 200:
+        raise RuntimeError(f"OpenAI error {r.status_code}: {r.text}")
+    return json.loads(r.json()["choices"][0]["message"]["content"].strip())
+
 @app.route("/ping", methods=["POST"])
 def ping(): return "pong"
 
@@ -182,6 +219,38 @@ def handle_webhook():
     
     return jsonify({"status": "ok", "vision": nutrition, "fitbit": log_resp})
 
+@app.route("/food_webook", methods=["POST"])
+def handle_webhook():
+    if WEBHOOK_KEY:
+        key = request.headers.get("X-Webhook-Key")
+        if key != WEBHOOK_KEY:
+            return jsonify({"error": "unauthorized"}), 401
+
+    food = request.json.get("food")
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # 1. Vision analysis
+    try:
+        nutrition = analyze_food(food)
+    except Exception as e:
+        return jsonify({"error": "vision_failed", "detail": str(e)}), 500
+
+    try:
+        tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
+    except Exception as e:
+        return jsonify({"error": "fitbit_refresh_failed", "detail": str(e)}), 500
+    
+    try:
+        log_resp = log_food_to_fitbit(
+            tokens["access_token"],
+            nutrition["food"],
+            nutrition["calories"],
+            nutrition.get("protein"),
+        )
+    except Exception as e:
+        return jsonify({"error": "fitbit_log_failed", "detail": str(e)}), 500
+    
+    return jsonify({"status": "ok", "vision": nutrition, "fitbit": log_resp})
 
 @app.route("/url_webhook", methods=["POST"])
 def handle_url_webhook():
