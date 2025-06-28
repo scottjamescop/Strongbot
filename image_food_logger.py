@@ -107,7 +107,7 @@ def analyze_image(img_url: str) -> dict:
         "role": "system",
         "content": (
             "You are a nutrition assistant. Reply with **ONLY** valid JSON: "
-            '{"food":"<name>","calories":123,"protein":10}. '
+            '{"food":"<name>","calories":"<calories>","protein":"<protein>"}. '
             "If unsure, guess."
         ),
     }
@@ -212,7 +212,7 @@ def handle_webhook():
             tokens["access_token"],
             nutrition["food"],
             nutrition["calories"],
-            nutrition.get("protein"),
+            nutrition["protein"],
         )
     except Exception as e:
         return jsonify({"error": "fitbit_log_failed", "detail": str(e)}), 500
