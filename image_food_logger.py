@@ -106,7 +106,7 @@ def lookup_nutrients(query: str, tz: str = "US/Eastern") -> dict:
         "Content-Type": "application/json"
     }
     payload = {"query": query, "timezone": tz}
-    r = requests.post(API_URL, headers=headers, json=payload, timeout=5)
+    r = requests.post(API_URL, headers=headers, body=payload)
     r.raise_for_status()
     return r.json()
 
