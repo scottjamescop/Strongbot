@@ -260,12 +260,7 @@ def handle_food_webhook():
     food = request.json.get("food")
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # 1. Vision analysis
-    try:
-        nutrition = lookup_nutrients(food)
-
-    except Exception as e:
-        return jsonify({"error": "vision_failed", "detail": str(e)}), 500
+    nutrition = lookup_nutrients(food)
 
     try:
         tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
