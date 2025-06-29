@@ -16,6 +16,10 @@ from flask import Flask, request, jsonify
 load_dotenv("/root/calorie-bot/.env")
 
 # --- Config -----------------------------------------------------------------
+APP_ID  = os.getenv("NIX_APP_ID")   # keep secrets out of source control
+API_KEY = os.getenv("NIX_API_KEY")
+API_URL = "https://trackapi.nutritionix.com/v2/natural/nutrients"
+
 OPENAI_API_KEY     = os.environ["OPENAI_API_KEY"]
 FITBIT_CLIENT_ID   = os.environ["FITBIT_CLIENT_ID"]
 FITBIT_SECRET      = os.environ["FITBIT_SECRET"]
@@ -90,6 +94,35 @@ def log_specific_food_to_fitbit(access_token: str, food_id: str, unit_id: int, s
     r = requests.post("https://api.fitbit.com/1/user/-/foods/log.json", headers=headers, data=body)
     r.raise_for_status()
     return r.json()
+
+
+#nutritionix
+
+def lookup_nutrients(query: str, tz: str = "US/Eastern") -> dict:
+    """Return Nutritionix JSON for a natural-language food query."""
+    headers = {
+        "x-app-id":  APP_ID,
+        "x-app-key": API_KEY,
+        "Content-Type": "application/json"
+    }
+    payload = {"query": query, "timezone": tz}
+    r = requests.post(API_URL, headers=headers, json=payload, timeout=5)
+    r.raise_for_status()
+    return r.json()
+
+def simplify(response: dict) -> dict:
+    """Flatten Nutritionix response to per-meal totals plus item list."""
+    foods = response["foods"]
+    totals = {
+        "calories":  sum(f["nf_calories"]  for f in foods),
+        "protein": sum(f["nf_protein"]   for f in foods),
+        "fat":     sum(f["nf_total_fat"] for f in foods),
+        "carb_g":    sum(f["nf_total_carbohydrate"] for f in foods),
+        "sugar_g":   sum(f["nf_sugars"]    for f in foods),
+        "sodium_mg": sum(f["nf_sodium"]    for f in foods),
+    }
+    return {"query": response["foods"][0]["query"], "totals": totals, "items": foods}
+#####end nutritionix
 
 def search_food(access_token: str, food_search: str):
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -229,7 +262,8 @@ def handle_food_webhook():
 
     # 1. Vision analysis
     try:
-        nutrition = analyze_food(food)
+        nutrition = lookup_nutrients(food)
+
     except Exception as e:
         return jsonify({"error": "vision_failed", "detail": str(e)}), 500
 
