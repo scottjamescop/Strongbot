@@ -261,6 +261,10 @@ def handle_food_webhook():
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
     nutrition = lookup_nutrients(food)
+    json_output = json.dumps(nutrition, indent=2)
+
+    # Print the JSON string to the console
+    print(json_output)
 
     try:
         tokens = refresh_fitbit_tokens(FITBIT_REFRESH)
