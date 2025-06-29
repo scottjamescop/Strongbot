@@ -98,14 +98,14 @@ def log_specific_food_to_fitbit(access_token: str, food_id: str, unit_id: int, s
 
 #nutritionix
 
-def lookup_nutrients(query: str, tz: str = "US/Eastern") -> dict:
+def lookup_nutrients(query: str) -> dict:
     """Return Nutritionix JSON for a natural-language food query."""
     headers = {
         "x-app-id":  APP_ID,
         "x-app-key": API_KEY,
         "Content-Type": "application/json"
     }
-    payload = {"query": query, "timezone": tz}
+    payload = {"query": query, "timezone": "US/Eastern"}
     r = requests.post(API_URL, headers=headers, body=payload)
     r.raise_for_status()
     return r.json()
