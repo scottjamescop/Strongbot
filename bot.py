@@ -1,5 +1,20 @@
-import re, os, asyncio, tempfile, yt_dlp, discord, random, aiohttp, subprocess, datetime, pathlib, ffmpeg
+import re, os, asyncio, tempfile, yt_dlp, discord, random, aiohttp, subprocess, datetime, pathlib, ffmpeg, sqlite3
 from discord.ext import commands
+
+conn = sqlite3.connect("bot_messages.db")
+c = conn.cursor()
+
+c.execute('''
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT NOT NULL,
+    username TEXT NOT NULL,
+    message TEXT NOT NULL
+)
+''')
+
+conn.commit()
+conn.close()
 
 TOKEN  = os.getenv("DISCORD_BOT_TOKEN")
 ANNOUNCE_CH = int(os.getenv("BOT_ANNOUNCE_CHANNEL", "0"))
