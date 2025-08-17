@@ -1,4 +1,4 @@
-import re, os, asyncio, tempfile, yt_dlp, discord, random, aiohttp, subprocess, datetime, pathlib, ffmpeg, sqlite3
+import re, os, asyncio, tempfile, yt_dlp, discord, random, aiohttp, subprocess, datetime, pathlib, ffmpeg, sqlite3, aiosqlite
 from discord.ext import commands
 
 conn = sqlite3.connect("bot_messages.db")
@@ -41,6 +41,15 @@ intents = discord.Intents.default()
 intents.message_content = True  
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+async def log_message(username, channel, message):
+    timestamp = datetime.datetime.utcnow().isoformat()
+    async with aiosqlite.connect("bot_messages.db") as db:
+        await db.execute(
+            "INSERT INTO messages (timestamp, username, message) VALUES (?, ?, ?)",
+            (timestamp, username, message)
+        )
+        await db.commit()
 
 async def compress_video(video_full_path, size_upper_bound, two_pass=True, filename_suffix='cps_'):
 
@@ -126,6 +135,14 @@ async def on_ready():
 async def on_message(message):
         if message.author == bot.user:
                 return
+
+        await log_message(
+            username=str(message.author),
+            channel=str(message.channel),
+            message=message.content
+        )
+
+        await bot.process_commands(message)
 
         tiktok_match = TIKTOK_PATTERN.search(message.content)
         #instagram_match = INSTAGRAM_PATTERN.search(message.content)
