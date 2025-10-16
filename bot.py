@@ -1,6 +1,5 @@
 import re, os, asyncio, tempfile, yt_dlp, discord, random, aiohttp, subprocess, datetime, pathlib, ffmpeg, sqlite3, aiosqlite
 from discord.ext import commands
-from discord import app_commands
 
 conn = sqlite3.connect("bot_messages.db")
 c = conn.cursor()
@@ -70,22 +69,7 @@ async def fetch_live_link_via_redirect(handle: str = YOUTUBE_HANDLE) -> str | No
                 return loc
             return None
 
-class Pigs(commands.Cog):
-    def __init__(self, bot: commands.Bot):
-        self.bot = bot
 
-    @app_commands.command(name="pigs", description="If Scott is live on YouTube, return the live link.")
-    async def pigs(self, interaction):
-        await interaction.response.defer(thinking=True, ephemeral=False)
-
-        link = await fetch_live_link_via_redirect()
-        if link:
-            await interaction.followup.send(f"🐷 Live now! {link}")
-        else:
-            await interaction.followup.send("🐷 Not live right now. Try again later.")
-
-async def setup(bot: commands.Bot):
-    await bot.add_cog(Pigs(bot))
 
 async def compress_video(video_full_path, size_upper_bound, two_pass=True, filename_suffix='cps_'):
 
@@ -161,14 +145,18 @@ async def compress_video(video_full_path, size_upper_bound, two_pass=True, filen
 
 @bot.event
 async def on_ready():
-    if "Pigs" not in bot.cogs:
-        await bot.add_cog(Pigs(bot))
         
     if ANNOUNCE_CH:
         ch = bot.get_channel(ANNOUNCE_CH)
         #if ch:
             #await ch.send(f"🟢 StrongBot online!  `{VERSION}`")
     print(f"[BOOT] {bot.user} {VERSION}")
+
+def mentioned_with_keyword(message: discord.Message, bot_user: discord.User | discord.ClientUser, keyword: str) -> bool:
+    # Detect @bot mention (any format) + keyword as a whole word (case-insensitive)
+    mentioned = (bot_user in message.mentions) or bool(re.search(rf"<@!?{bot_user.id}>", message.content))
+    has_word = bool(re.search(rf"\b{re.escape(keyword)}\b", message.content, flags=re.IGNORECASE))
+    return mentioned and has_word
 
 @bot.event
 async def on_message(message):
@@ -181,8 +169,24 @@ async def on_message(message):
             message=message.content
         )
 
-        await bot.process_commands(message)
+        
 
+        if mentioned_with_keyword(message, bot.user, "pigs"):
+            try:
+                async with message.channel.typing():
+                    link = await fetch_live_link_via_redirect()
+                if link:
+                    await message.channel.send(f"🐷 Live now! {link}")
+                else:
+                    await message.channel.send("🐷 Not live right now. Try again later.")
+            except Exception as e:
+                await message.channel.send(f"🐷 Oink—something went sideways: `{e}`")
+        # Don’t return; let other handlers (like TikTok) still run if present
+        # If you prefer to stop further processing when pigs matches, uncomment:
+        # return
+
+        await bot.process_commands(message)
+    
         tiktok_match = TIKTOK_PATTERN.search(message.content)
         #instagram_match = INSTAGRAM_PATTERN.search(message.content)
 
