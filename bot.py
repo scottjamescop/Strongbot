@@ -44,6 +44,8 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+bot.tree.sync()
+
 async def log_message(username, channel, message):
     timestamp = datetime.datetime.utcnow().isoformat()
     async with aiosqlite.connect("bot_messages.db") as db:
