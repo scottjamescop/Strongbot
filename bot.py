@@ -1,5 +1,6 @@
 import re, os, asyncio, tempfile, yt_dlp, discord, random, aiohttp, subprocess, datetime, pathlib, ffmpeg, sqlite3, aiosqlite
 from discord.ext import commands
+from discord import app_commands
 
 conn = sqlite3.connect("bot_messages.db")
 c = conn.cursor()
@@ -160,6 +161,9 @@ async def compress_video(video_full_path, size_upper_bound, two_pass=True, filen
 
 @bot.event
 async def on_ready():
+    if "Pigs" not in bot.cogs:
+        await bot.add_cog(Pigs(bot))
+        
     if ANNOUNCE_CH:
         ch = bot.get_channel(ANNOUNCE_CH)
         #if ch:
