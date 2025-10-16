@@ -54,65 +54,81 @@ async def log_message(username, channel, message):
         await db.commit()
 
 async def fetch_live_link_via_redirect(handle: str = YOUTUBE_HANDLE) -> str | None:
-    # Normalize handle
     handle = handle if handle.startswith("@") else f"@{handle}"
     live_url = f"https://www.youtube.com/{handle}/live"
     streams_url = f"https://www.youtube.com/{handle}/streams"
 
     headers = {
-        # Realistic UA helps avoid odd responses
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
                       "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
     }
 
-    async with aiohttp.ClientSession() as session:
-        # A) Try the classic: no-redirect GET; check Location
-        try:
-            async with session.get(live_url, allow_redirects=False, headers=headers, timeout=10) as resp:
-                loc = resp.headers.get("Location")
-                if resp.status in (301, 302, 303, 307, 308) and loc and "/watch" in loc:
-                    return f"https://www.youtube.com{loc}" if loc.startswith("/") else loc
-        except Exception:
-            pass
+    async def is_watch_live(session: aiohttp.ClientSession, watch_url: str) -> bool:
+        # Fetch the watch page and look for strong live signals
+        async with session.get(watch_url, headers=headers, timeout=12) as r:
+            if r.status != 200:
+                return False
+            html = await r.text()
+            # Strong signals that this specific watch page is live *now*:
+            if re.search(r'"isLiveNow"\s*:\s*true', html):
+                return True
+            if re.search(r'"isLiveContent"\s*:\s*true', html) and re.search(r'"viewCountText".*?watching', html, re.I | re.S):
+                return True
+            # Badge/style flags that mark the *current* stream:
+            if re.search(r'LIVE\s+NOW', html, re.I) and "playerResponse" in html:
+                return True
+            # Thumbnail overlay live style
+            if re.search(r'"thumbnailOverlayTimeStatusRenderer".*?"style"\s*:\s*"LIVE"', html, re.S):
+                return True
+            return False
 
-        # B) Follow redirects and check final URL (sometimes YT does internal hops)
+    async with aiohttp.ClientSession() as session:
+        # A) Try the official live redirect and validate the final watch page
         try:
             async with session.get(live_url, allow_redirects=True, headers=headers, timeout=12) as resp:
-                # If we ended up on a watch page, great
-                if "/watch" in str(resp.url):
-                    return str(resp.url)
-                # Sometimes the page HTML includes a meta/client redirect; check for a watch URL in HTML
-                text = await resp.text()
-                m = re.search(r'https?://www\.youtube\.com/watch\?v=[\w-]{8,}', text)
+                final = str(resp.url)
+                if "/watch" in final and await is_watch_live(session, final):
+                    return final
+                # Sometimes the HTML has the watch link without proper 30x; try to extract, then validate
+                html = await resp.text()
+                m = re.search(r'https?://www\.youtube\.com/watch\?v=([\w-]{8,})', html)
                 if m:
-                    return m.group(0)
-                # Also look for isLiveContent JSON hint with a videoId nearby
-                vid = re.search(r'"videoId"\s*:\s*"([\w-]{8,})".{0,200}?"isLiveContent"\s*:\s*true', text)
-                if vid:
-                    return f"https://www.youtube.com/watch?v={vid.group(1)}"
+                    candidate = f"https://www.youtube.com/watch?v={m.group(1)}"
+                    if await is_watch_live(session, candidate):
+                        return candidate
         except Exception:
             pass
 
-        # C) Fallback: parse the Streams tab and grab the first LIVE video
+        # B) Fallback: Streams tab—pick the first tile explicitly marked LIVE
         try:
             async with session.get(streams_url, headers=headers, timeout=12) as resp:
                 if resp.status == 200:
                     html = await resp.text()
-                    # Look for a LIVE badge nearby, then a watch link; minimal parsing to avoid heavy JSON parsing
-                    # First, directly scan for watch URLs
-                    watches = re.findall(r'/watch\?v=([\w-]{8,})', html)
-                    # Heuristic: prefer the first unique watch id visible; optionally look for "LIVE NOW" markers
-                    if watches:
-                        # Optional: try to pick one with a LIVE signal around it
-                        for vid in watches:
-                            # check a small window around the first occurrence
-                            idx = html.find(vid)
-                            window = html[max(0, idx-500): idx+500]
-                            if re.search(r'LIVE\s+NOW|badge.+live|aria-label="Live"', window, re.I):
-                                return f"https://www.youtube.com/watch?v={vid}"
-                        # If we didn't find a live badge, still return the first (often the current or recent stream)
-                        return f"https://www.youtube.com/watch?v={watches[0]}"
+
+                    # Prefer entries with a LIVE badge near the videoId
+                    live_ids = set()
+                    for vid in re.findall(r'"videoId"\s*:\s*"([\w-]{8,})"', html):
+                        idx = html.find(vid)
+                        if idx == -1:
+                            continue
+                        window = html[max(0, idx-800): idx+800]
+                        if re.search(r'LIVE\s+NOW|badge[^}]+live|thumbnailOverlayTimeStatusRenderer[^}]+LIVE', window, re.I | re.S):
+                            live_ids.add(vid)
+
+                    # Validate each live-marked candidate by fetching its watch page
+                    for vid in list(live_ids):
+                        candidate = f"https://www.youtube.com/watch?v={vid}"
+                        if await is_watch_live(session, candidate):
+                            return candidate
+
+                    # Absolute last resort: scan for watch links and validate each until one is truly live
+                    for vid in re.findall(r'/watch\?v=([\w-]{8,})', html):
+                        candidate = f"https://www.youtube.com/watch?v={vid}"
+                        if await is_watch_live(session, candidate):
+                            return candidate
         except Exception:
             pass
 
