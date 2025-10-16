@@ -22,6 +22,8 @@ ANNOUNCE_CH = int(os.getenv("BOT_ANNOUNCE_CHANNEL", "0"))
 TIKTOK_PATTERN = re.compile(r"https?://(?:\w+\.)?tiktok\.com/.*|https?://(?:\w+\.)?vt\.tiktok\.com/.*")
 #INSTAGRAM_PATTERN = re.compile(r"https?://(?:\w+\.)?instagram\.com/.*")
 
+YOUTUBE_HANDLE = "@scottjamescop"  # changeable via env if you want
+
 def get_version() -> str:
     try:
         with open(pathlib.Path(__file__).parent / "version.txt") as f:
@@ -50,6 +52,39 @@ async def log_message(username, channel, message):
             (timestamp, username, message)
         )
         await db.commit()
+
+async def fetch_live_link_via_redirect(handle: str = YOUTUBE_HANDLE) -> str | None:
+    url = f"https://www.youtube.com/{handle}/live"
+    # We want to see if YT redirects us to /watch?v=... when live.
+    async with aiohttp.ClientSession() as session:
+        # Use GET not HEAD because YT sometimes treats HEAD oddly; disable redirects.
+        async with session.get(url, allow_redirects=False, headers={
+            "User-Agent": "Mozilla/5.0 (DiscordBot; +https://github.com/scottjamescop/Strongbot)"
+        }) as resp:
+            loc = resp.headers.get("Location")
+            if resp.status in (301, 302, 303, 307, 308) and loc and "/watch" in loc:
+                # Normalize full URL
+                if loc.startswith("/"):
+                    return f"https://www.youtube.com{loc}"
+                return loc
+            return None
+
+class Pigs(commands.Cog):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+
+    @app_commands.command(name="pigs", description="If Scott is live on YouTube, return the live link.")
+    async def pigs(self, interaction):
+        await interaction.response.defer(thinking=True, ephemeral=False)
+
+        link = await fetch_live_link_via_redirect()
+        if link:
+            await interaction.followup.send(f"🐷 Live now! {link}")
+        else:
+            await interaction.followup.send("🐷 Not live right now. Try again later.")
+
+async def setup(bot: commands.Bot):
+    await bot.add_cog(Pigs(bot))
 
 async def compress_video(video_full_path, size_upper_bound, two_pass=True, filename_suffix='cps_'):
 
